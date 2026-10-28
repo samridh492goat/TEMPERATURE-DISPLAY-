@@ -1,0 +1,69 @@
+#include <LiquidCrystal.h>
+#include <DHT.h>
+
+#define DHTPIN 7          // Digital pin connected to the DHT11 data pin
+#define DHTTYPE DHT22     // Defining the sensor type as DHT11
+
+// Initialize DHT sensor
+DHT dht(DHTPIN, DHTTYPE);
+
+// Initialize the LCD library with interface pins (RS, E, D4, D5, D6, D7)
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+const int ledPin = 8;               // Warning LED pin
+const float thresholdTemp = 25.0;   // Threshold temperature in Celsius (°C)
+
+void setup() {
+  // Set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+  
+  // Initialize the DHT sensor
+  dht.begin();
+  
+  // Initial display message
+  lcd.setCursor(0, 0);
+  lcd.print("Temp Monitor");
+  lcd.setCursor(0, 1);
+  lcd.print("Initializing...");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  // Read temperature as Celsius (default)
+  float temperatureC = dht.readTemperature();
+  
+  // Check if readings failed and exit early to try again
+  if (isnan(temperatureC)) {
+    Serial.println("Failed to read from DHT sensor!");
+    lcd.setCursor(0, 0);
+    lcd.print("Sensor Error!   ");
+    delay(2000);
+    return;
+  }
+  
+  // Print temperature to Serial Monitor for debugging
+  Serial.print("Temperature: ");
+  Serial.print(temperatureC);
+  Serial.println(" °C");
+
+  // Display temperature on Row 0 of LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.print(temperatureC, 1); // 1 decimal place
+  lcd.print(" C ");
+
+  // Check if temperature exceeds the 25°C threshold
+  lcd.setCursor(0, 1);
+  if (temperatureC > thresholdTemp) {
+    digitalWrite(ledPin, HIGH); // Turn ON LED
+    lcd.print("Status: ALERT!  ");
+  } else {
+    digitalWrite(ledPin, LOW);  // Turn OFF LED
+    lcd.print("Status: Normal  ");
+  }
+
+  delay(2000); // DHT11 updates cleanly every 2 seconds
+}
